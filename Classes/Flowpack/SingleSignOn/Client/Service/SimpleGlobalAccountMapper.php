@@ -25,6 +25,12 @@ class SimpleGlobalAccountMapper implements GlobalAccountMapperInterface {
 	protected $propertyMapper;
 
 	/**
+	 * @Flow\Inject
+	 * @var \TYPO3\Flow\Security\Policy\PolicyService
+	 */
+	protected $policyService;
+
+	/**
 	 * @var array
 	 */
 	protected $typeMapping = array();
@@ -50,7 +56,12 @@ class SimpleGlobalAccountMapper implements GlobalAccountMapperInterface {
 
 		$account->setAccountIdentifier($globalAccountData['accountIdentifier']);
 		$account->setAuthenticationProviderName('SingleSignOn');
-		$account->setRoles(array_map(function($roleIdentifier) { return new \TYPO3\Flow\Security\Policy\Role($roleIdentifier); }, $globalAccountData['roles']));
+
+		foreach ($globalAccountData['roles'] as $roleIdentifier) {
+			if ($this->policyService->hasRole($roleIdentifier)) {
+				$account->addRole($this->policyService->getRole($roleIdentifier));
+			}
+		}
 
 		if (isset($globalAccountData['party'])) {
 			$party = $this->mapParty($globalAccountData['party']);
